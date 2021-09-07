@@ -28,7 +28,7 @@ class OrderAdapter(private val orderList : MutableList<Order>,
             binding.btnTracker.setOnClickListener{
                 listener.onTrack(order)
             }
-            binding.chipChat.setOnCloseIconClickListener {
+            binding.chipChat.setOnClickListener {
                 listener.onStartChat(order)
             }
         }
