@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Consultor/Documents/GitHub/GhettoStore/app/src/main/res/layout/activity_settings.xml" value="0.203125" />
         <entry key="..\:/Users/Consultor/Documents/GitHub/GhettoStore/app/src/main/res/layout/item_product.xml" value="0.203125" />
+        <entry key="..\:/Users/Consultor/Documents/GitHub/GhettoStore/app/src/main/res/menu/menu_main.xml" value="0.1" />
+        <entry key="..\:/Users/Consultor/Documents/GitHub/GhettoStore/app/src/main/res/xml/root_preferences.xml" value="0.14096916299559473" />
       </map>
     </option>
   </component>

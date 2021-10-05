@@ -19,6 +19,7 @@ import com.example.ghetto.databinding.ActivityMainBinding
 import com.example.ghetto.detail.DetailFragment
 import com.example.ghetto.entities.Product
 import com.example.ghetto.order.OrderActivity
+import com.example.ghetto.settings.SettingsActivity
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
@@ -256,8 +257,13 @@ class MainActivity : AppCompatActivity(), OnProductListener, MainAux {
                         }
                     }
             }
+
             R.id.action_order_history -> {
                 startActivity(Intent(this, OrderActivity::class.java))
+            }
+
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
             }
         }
         return super.onOptionsItemSelected(item)

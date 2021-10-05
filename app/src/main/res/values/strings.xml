@@ -32,4 +32,11 @@
     <string name="notification_channel_id_default">general</string>
     <string name="notification_channel_name_default">Generales</string>
     <string name="button_more_products">Mas</string>
+    <string name="pref_fcm_title">Recibir Notificiaciones</string>
+    <string name="pref_offers_key">pref_offers</string>
+    <string name="pref_offers_title">Ofertas y Promociones</string>
+    <string name="menu_settings">Configuración</string>
+    <string name="settings_topic_offer">topic_offers</string>
+
+
 </resources>
