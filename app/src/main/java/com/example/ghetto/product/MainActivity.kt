@@ -26,68 +26,77 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
 
-class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
+class MainActivity : AppCompatActivity(), OnProductListener, MainAux {
 
     private lateinit var firebaseAuth: FirebaseAuth
-    private lateinit var authStateListener: FirebaseAuth.AuthStateListener
-    private lateinit var binding : ActivityMainBinding
-    private lateinit var adapter: ProductAdapter
-    private lateinit var firestoreListener : ListenerRegistration
 
-    private var productSelected : Product? = null
+    private lateinit var authStateListener: FirebaseAuth.AuthStateListener
+
+    private lateinit var binding: ActivityMainBinding
+
+    private lateinit var adapter: ProductAdapter
+
+    private lateinit var firestoreListener: ListenerRegistration
+    private var queryPagination: Query? = null
+
+    private var productSelected: Product? = null
     val productCartList = mutableListOf<Product>()
 
 
-    private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
-        val response = IdpResponse.fromResultIntent(it.data)
+    private val resultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            val response = IdpResponse.fromResultIntent(it.data)
 
-        if(it.resultCode == RESULT_OK){
-            val user = FirebaseAuth.getInstance().currentUser
-            if(user != null){
-                Toast.makeText(this, "Bienvenido", Toast.LENGTH_SHORT).show()
+            if (it.resultCode == RESULT_OK) {
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user != null) {
+                    Toast.makeText(this, "Bienvenido", Toast.LENGTH_SHORT).show()
 
-                val preferences = PreferenceManager.getDefaultSharedPreferences(this)
-                val token = preferences.getString(Constants.PROP_TOKEN, null)
+                    val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+                    val token = preferences.getString(Constants.PROP_TOKEN, null)
 
-                token?.let{
-                    val db = FirebaseFirestore.getInstance()
-                    val tokenMap = hashMapOf(Pair(Constants.PROP_TOKEN, token))
+                    token?.let {
+                        val db = FirebaseFirestore.getInstance()
+                        val tokenMap = hashMapOf(Pair(Constants.PROP_TOKEN, token))
 
-                    db.collection(Constants.COLL_USERS)
-                        .document(user.uid)
-                        .collection(Constants.COLL_TOKENS)
-                        .add(tokenMap)
-                        .addOnSuccessListener {
-                            Log.i("registered token", token)
-                            preferences.edit {
-                                putString(Constants.PROP_TOKEN, null)
-                                    .apply()
+                        db.collection(Constants.COLL_USERS)
+                            .document(user.uid)
+                            .collection(Constants.COLL_TOKENS)
+                            .add(tokenMap)
+                            .addOnSuccessListener {
+                                Log.i("registered token", token)
+                                preferences.edit {
+                                    putString(Constants.PROP_TOKEN, null)
+                                        .apply()
+                                }
                             }
-                        }
-                        .addOnFailureListener {
-                            Log.i("not registered token", token)
-                        }
-                }
-            }else {
-                if(response==null){
-                    Toast.makeText(this, "Adios", Toast.LENGTH_SHORT).show()
-                    finish()
+                            .addOnFailureListener {
+                                Log.i("not registered token", token)
+                            }
+                    }
                 } else {
-                    response.error?.let{
-                        if (it.errorCode == ErrorCodes.NO_NETWORK){
-                            Toast.makeText(this, "Sin red", Toast.LENGTH_SHORT).show()
-                        }else{
-                            Toast.makeText(this, "Codigo de Error: ${it.errorCode}",
-                                Toast.LENGTH_SHORT).show()
+                    if (response == null) {
+                        Toast.makeText(this, "Adios", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        response.error?.let {
+                            if (it.errorCode == ErrorCodes.NO_NETWORK) {
+                                Toast.makeText(this, "Sin red", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(
+                                    this, "Codigo de Error: ${it.errorCode}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
                 }
             }
-        }
 
-    }
+        }
 
     override fun showButton(isVisible: Boolean) {
         binding.btnViewCart.visibility = if (isVisible) View.VISIBLE else View.GONE
@@ -95,7 +104,7 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
 
     override fun onClick(product: Product) {
         val index = productCartList.indexOf(product)
-        if (index != -1){
+        if (index != -1) {
             productSelected = productCartList[index]
         } else {
             productSelected = product
@@ -109,6 +118,7 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
 
         showButton(false)
     }
+
 
 
 
@@ -132,66 +142,83 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
 
     }
 
-    private fun configAuth(){
+    private fun configAuth() {
         firebaseAuth = FirebaseAuth.getInstance()
         authStateListener = FirebaseAuth.AuthStateListener { auth ->
-            if (auth.currentUser != null){
+            if (auth.currentUser != null) {
                 supportActionBar?.title = auth.currentUser?.displayName
                 binding.linearLayoutProgress.visibility = View.GONE
                 binding.nsvProducts.visibility = View.VISIBLE
-            }else{
+            } else {
                 val providers = arrayListOf(
                     AuthUI.IdpConfig.EmailBuilder().build(),
-                    AuthUI.IdpConfig.GoogleBuilder().build())
+                    AuthUI.IdpConfig.GoogleBuilder().build()
+                )
 
                 resultLauncher.launch(
                     AuthUI.getInstance()
-                    .createSignInIntentBuilder()
-                    .setAvailableProviders(providers)
-                    .setIsSmartLockEnabled(false)
-                    .build())
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(providers)
+                        .setIsSmartLockEnabled(false)
+                        .build()
+                )
             }
         }
 
     }
 
-    private fun configFirestoreRealtime(){
+    private fun configFirestoreRealtime() {
         val db = FirebaseFirestore.getInstance()
         val productRef = db.collection(Constants.COLL_PRODUCTS)
-        firestoreListener = productRef.addSnapshotListener { snapshots, error ->
-            if (error != null){
-                Toast.makeText(this, "Error al consultar datos", Toast.LENGTH_SHORT).show()
-                return@addSnapshotListener
-            }
-            for (snapshot in snapshots!!.documentChanges){
-                val product = snapshot.document.toObject(Product::class.java)
-                product.id = snapshot.document.id
-                when(snapshot.type){
-                    DocumentChange.Type.ADDED -> adapter.add(product)
-                    DocumentChange.Type.MODIFIED -> adapter.update(product)
-                    DocumentChange.Type.REMOVED -> adapter.delete(product)
+        firestoreListener = productRef
+            .limit(3)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Toast.makeText(this, "Error al consultar datos", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
+
+                snapshots?.let{ items ->
+                    val lastItem = items.documents[items.size() - 1]
+
+                    queryPagination = productRef
+                        .startAfter(lastItem)
+                        .limit(3)
+
+                    for (snapshot in snapshots!!.documentChanges) {
+                        val product = snapshot.document.toObject(Product::class.java)
+                        product.id = snapshot.document.id
+                        when (snapshot.type) {
+                            DocumentChange.Type.ADDED -> adapter.add(product)
+                            DocumentChange.Type.MODIFIED -> adapter.update(product)
+                            DocumentChange.Type.REMOVED -> adapter.delete(product)
+                        }
+                    }
                 }
             }
-        }
     }
-
 
 
     private fun configRecyclerView() {
-        adapter = ProductAdapter(mutableListOf(), this)
+        adapter = ProductAdapter(mutableListOf(Product()), this)
         binding.recyclerView.apply {
-            layoutManager = GridLayoutManager(this@MainActivity, 2,
+            layoutManager = GridLayoutManager(
+                this@MainActivity, 2,
                 GridLayoutManager.VERTICAL,
-                false)
+                false
+            )
             adapter = this@MainActivity.adapter
         }
 
     }
 
-    private fun configButtons(){
-        binding.btnViewCart.setOnClickListener{
+    private fun configButtons() {
+        binding.btnViewCart.setOnClickListener {
             val fragment = CartFragment()
-            fragment.show(supportFragmentManager.beginTransaction(), CartFragment::class.java.simpleName)
+            fragment.show(
+                supportFragmentManager.beginTransaction(),
+                CartFragment::class.java.simpleName
+            )
         }
     }
 
@@ -213,22 +240,23 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when(item.itemId){
-            R.id.action_sign_out ->{
+        when (item.itemId) {
+            R.id.action_sign_out -> {
                 AuthUI.getInstance().signOut(this)
                     .addOnSuccessListener {
                         Toast.makeText(this, "Sesion Terminada", Toast.LENGTH_SHORT).show()
                     }
-                    .addOnCompleteListener{
-                        if (it.isSuccessful){
+                    .addOnCompleteListener {
+                        if (it.isSuccessful) {
                             binding.nsvProducts.visibility = View.GONE
                             binding.linearLayoutProgress.visibility = View.VISIBLE
-                        }else{
-                            Toast.makeText(this, "No se pudo cerrar la sesión", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "No se pudo cerrar la sesión", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
             }
-            R.id.action_order_history ->{
+            R.id.action_order_history -> {
                 startActivity(Intent(this, OrderActivity::class.java))
             }
         }
@@ -239,12 +267,45 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
 
     override fun addProductToCart(product: Product) {
         val index = productCartList.indexOf(product)
-        if (index != -1){
+        if (index != -1) {
             productCartList.set(index, product)
         } else {
             productCartList.add(product)
         }
         updateTotal()
+    }
+
+    override fun loadMore() {
+        val db = FirebaseFirestore.getInstance()
+        val productRef = db.collection(Constants.COLL_PRODUCTS)
+
+        queryPagination?.let {
+            it.addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    Toast.makeText(this, "Error al consultar datos", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
+
+                snapshots?.let { items ->
+                    val lastItem = items.documents[items.size() - 1]
+
+                    queryPagination = productRef
+                        .startAfter(lastItem)
+                        .limit(3)
+
+                    for (snapshot in snapshots!!.documentChanges) {
+                        val product = snapshot.document.toObject(Product::class.java)
+                        product.id = snapshot.document.id
+                        when (snapshot.type) {
+                            DocumentChange.Type.ADDED -> adapter.add(product)
+                            DocumentChange.Type.MODIFIED -> adapter.update(product)
+                            DocumentChange.Type.REMOVED -> adapter.delete(product)
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     override fun clearCart() {
@@ -255,13 +316,13 @@ class MainActivity : AppCompatActivity() ,OnProductListener ,MainAux  {
 
     override fun updateTotal() {
         var total = 0.0
-        productCartList.forEach{
+        productCartList.forEach {
             total += it.totalPrice()
         }
 
-        if (total ==0.0){
+        if (total == 0.0) {
             binding.tvTotal.text = getString(R.string.product_empty_cart)
-        }else{
+        } else {
             binding.tvTotal.text = getString(R.string.product_full_cart, total)
 
         }

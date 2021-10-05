@@ -11,6 +11,7 @@
     app:cardCornerRadius="@dimen/corner_radius">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/containerProduct"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
@@ -53,5 +54,14 @@
             tools:text="$10.00US" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnMore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_more_products"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:layout_gravity="center"/>
 
 </com.google.android.material.card.MaterialCardView>

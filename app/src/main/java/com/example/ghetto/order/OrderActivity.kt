@@ -10,7 +10,9 @@ import com.example.ghetto.chat.ChatFragment
 import com.example.ghetto.databinding.ActivityOrderBinding
 import com.example.ghetto.entities.Order
 import com.example.ghetto.track.TrackFragment
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 
 class OrderActivity : AppCompatActivity() , OnOrderListener , OrderAux {
 
@@ -37,19 +39,30 @@ class OrderActivity : AppCompatActivity() , OnOrderListener , OrderAux {
     }
 
     private fun setUpFirestore(){
-        val db = FirebaseFirestore.getInstance()
-        db.collection(Constants.COLL_REQUEST)
-            .get()
-            .addOnSuccessListener {
-                for (document in it){
-                    val order = document.toObject(Order::class.java)
-                    order.id = document.id
-                    adapter.add(order)
+        FirebaseAuth.getInstance().currentUser?.let{ user ->
+            val db = FirebaseFirestore.getInstance()
+            db.collection(Constants.COLL_REQUEST)
+                .orderBy(Constants.PROP_DATE, Query.Direction.DESCENDING)
+                .whereEqualTo(Constants.PROP_CLIENT_ID, user.uid )
+                //.whereIn(Constants.PROP_STATUS, listOf(1, 2))
+                //.whereNotIn(Constants.PROP_STATUS, listOf(1, 2))
+                //.whereGreaterThan(Constants.PROP_STATUS, 1)
+                //.whereLessThan(Constants.PROP_STATUS, 4)
+                //.whereGreaterThanOrEqualTo(Constants.PROP_STATUS, 1)
+                //.whereLessThanOrEqualTo(Constants.PROP_STATUS, 4)
+                .get()
+                .addOnSuccessListener {
+                    for (document in it){
+                        val order = document.toObject(Order::class.java)
+                        order.id = document.id
+                        adapter.add(order)
+                    }
                 }
-            }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error al consultar datos", Toast.LENGTH_SHORT).show()
-            }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Error al consultar datos", Toast.LENGTH_SHORT).show()
+                }
+        }
+
     }
 
     override fun onTrack(order: Order) {

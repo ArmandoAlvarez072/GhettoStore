@@ -4,4 +4,5 @@ import com.example.ghetto.entities.Product
 
 interface OnProductListener {
     fun onClick(product: Product)
+    fun loadMore()
 }

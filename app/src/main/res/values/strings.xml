@@ -31,4 +31,5 @@
     <string name="chat_title">Soporte</string>
     <string name="notification_channel_id_default">general</string>
     <string name="notification_channel_name_default">Generales</string>
+    <string name="button_more_products">Mas</string>
 </resources>

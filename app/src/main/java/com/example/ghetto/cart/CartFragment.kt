@@ -19,6 +19,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 class CartFragment : BottomSheetDialogFragment() , OnCartListener {
@@ -50,7 +51,7 @@ class CartFragment : BottomSheetDialogFragment() , OnCartListener {
                 bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
             }
             it.efab.setOnClickListener {
-                requestOrder()
+                requestOrderTransaction()
             }
 
         }
@@ -74,6 +75,51 @@ class CartFragment : BottomSheetDialogFragment() , OnCartListener {
             val db = FirebaseFirestore.getInstance()
             db.collection(Constants.COLL_REQUEST)
                 .add(order)
+                .addOnSuccessListener {
+                    dismiss()
+                    (activity as? MainAux)?.clearCart()
+                    startActivity(Intent(context, OrderActivity::class.java))
+                }
+                .addOnFailureListener {
+                    Toast.makeText(activity, "Error al comprar", Toast.LENGTH_SHORT).show()
+                }
+                .addOnCompleteListener {
+                    enableUI(true)
+                }
+        }
+
+    }
+
+    private fun requestOrderTransaction() {
+        val user = FirebaseAuth.getInstance().currentUser
+        user?.let { myUser ->
+            enableUI(false)
+            val products = hashMapOf<String, ProductOrder>()
+            adapter.getProducts().forEach { product ->
+                products.put(product.id!!,
+                    ProductOrder(product.id!!, product.name!!, product.newQuantity)
+                )
+            }
+            val order = Order(clientId = myUser.uid,
+                products = products,
+                totalPrice = totalPrice,
+                status = 1 )
+
+
+            val db = FirebaseFirestore.getInstance()
+
+            val requestDoc = db.collection(Constants.COLL_REQUEST).document()
+            val productsRef = db.collection(Constants.COLL_PRODUCTS)
+
+            db.runBatch{ batch ->
+                batch.set(requestDoc, order)
+
+                order.products.forEach{
+                    batch.update(productsRef.document(it.key),
+                        Constants.PROP_QUANTITY,
+                        FieldValue.increment(-it.value.quantity.toLong()))
+                }
+            }
                 .addOnSuccessListener {
                     dismiss()
                     (activity as? MainAux)?.clearCart()
